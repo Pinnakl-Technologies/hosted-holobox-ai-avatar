@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         const sessionConfig = {
             session: {
                 type: "realtime",
-                model: "gpt-realtime-mini",
+                model: "gpt-4o-mini-realtime-preview",
                 audio: {
                     output: {
                         voice: req.query.voice || "marin",
