@@ -1,9 +1,17 @@
 {
-    "outputDirectory": "client/dist",
-    "rewrites": [
-        {
-            "source": "/token",
-            "destination": "/api/token"
-        }
-    ]
+  "outputDirectory": "client/dist",
+  "functions": {
+    "api/*.js": {
+      "includeFiles": [
+        "data/**",
+        "constants/**"
+      ]
+    }
+  },
+  "rewrites": [
+    {
+      "source": "api/token",
+      "destination": "/api/token"
+    }
+  ]
 }
