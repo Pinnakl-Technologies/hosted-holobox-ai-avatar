@@ -1,21 +1,29 @@
-import fs from "fs/promises";
-import { instructions as rawInstructions, avatar3Prompt } from "../constants/prompt.js";
+const fs = require("fs/promises");
+const path = require("path");
+const { instructions: rawInstructions, avatar3Prompt } = require("../constants/prompt.js");
 
-// Load knowledge bases once per function instance
-const knowledgeBase = await fs.readFile(
-  new URL("../data/knowledgebase.txt", import.meta.url),
-  "utf-8",
-);
-const baseInstructions = rawInstructions.replace("{{KNOWLEDGE_BASE}}", knowledgeBase);
+// Helper to read files relative to this file
+const readFile = (relativePath) =>
+  fs.readFile(path.join(__dirname, relativePath), "utf-8");
 
-const alfalahKnowledgeBase = await fs.readFile(
-  new URL("../data/alfalah_knowledge_base.json", import.meta.url),
-  "utf-8",
-);
-const avatar3Instructions = `${avatar3Prompt}\n\n## KNOWLEDGE BASE\n${alfalahKnowledgeBase}`;
+// Preload knowledge bases once per runtime
+let baseInstructions;
+let avatar3Instructions;
 
-export default async function handler(req, res) {
+async function loadPrompts() {
+  if (baseInstructions && avatar3Instructions) return;
+
+  const knowledgeBase = await readFile("../data/knowledgebase.txt");
+  baseInstructions = rawInstructions.replace("{{KNOWLEDGE_BASE}}", knowledgeBase);
+
+  const alfalahKnowledgeBase = await readFile("../data/alfalah_knowledge_base.json");
+  avatar3Instructions = `${avatar3Prompt}\n\n## KNOWLEDGE BASE\n${alfalahKnowledgeBase}`;
+}
+
+module.exports = async function handler(req, res) {
   try {
+    await loadPrompts();
+
     const voice = req.query.voice || "marin";
     const avatar = req.query.avatar || "avatar1";
 
@@ -32,17 +40,14 @@ export default async function handler(req, res) {
       },
     };
 
-    const response = await fetch(
-      "https://api.openai.com/v1/realtime/client_secrets",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(sessionConfig),
+    const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify(sessionConfig),
+    });
 
     const data = await response.json();
 
@@ -58,4 +63,4 @@ export default async function handler(req, res) {
     console.error("Token generation error:", error);
     return res.status(500).json({ error: "Failed to generate token" });
   }
-}
+};
