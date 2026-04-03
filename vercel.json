@@ -2,10 +2,7 @@
   "outputDirectory": "client/dist",
   "functions": {
     "api/*.js": {
-      "includeFiles": [
-        "data/**",
-        "constants/**"
-      ]
+      "includeFiles": "data/**,constants/**"
     }
   },
   "rewrites": [
