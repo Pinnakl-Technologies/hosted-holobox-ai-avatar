@@ -210,7 +210,11 @@
       "description": "Our accounts suite has been designed keeping the diverse needs of our customers. From current accounts, term deposits, foreign currency to structured savings products, choose the option that best suits your needs and start enjoying your daily banking services through our vast branch network and digital banking solutions.",
       "features": [
         "vast branch network",
-        "digital banking solutions"
+        "digital banking solutions",
+        "current accounts",
+        "term deposits",
+        "foreign currency",
+        "structured savings products"
       ]
     },
     {
