@@ -52,7 +52,7 @@ const sessionTools = [
 function buildSessionConfig({ voice, avatar }) {
   const baseInstructions = avatar === "avatar3" ? avatar3Instructions : instructions;
 
-  return {
+  return JSON.stringify({
     session: {
       type: "realtime",
       model: "gpt-4o-mini-realtime-preview",
@@ -65,47 +65,52 @@ function buildSessionConfig({ voice, avatar }) {
       tools: sessionTools,
       tool_choice: "auto",
     },
-  };
+  });
 }
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
     const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       console.error("Missing OPENAI_API_KEY in Vercel environment.");
-      return res.status(500).json({
-        error: "Server is missing OPENAI_API_KEY.",
-      });
+      return res.status(500).json({ error: "Server is missing OPENAI_API_KEY." });
     }
 
-    const voice = req.query.voice || "marin";
-    const avatar = req.query.avatar || "avatar1";
-
-    const response = await fetch(
-      "https://api.openai.com/v1/realtime/client_secrets",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(buildSessionConfig({ voice, avatar })),
-      },
+    const fd = new FormData();
+    const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    fd.set("sdp", body);
+    fd.set(
+      "session",
+      buildSessionConfig({
+        voice: req.query.voice || "marin",
+        avatar: req.query.avatar || "avatar1",
+      }),
     );
 
-    const data = await response.json();
+    const response = await fetch("https://api.openai.com/v1/realtime/calls", {
+      method: "POST",
+      headers: {
+        "OpenAI-Beta": "realtime=v1",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: fd,
+    });
+
+    const sdp = await response.text();
 
     if (!response.ok) {
-      console.error("OpenAI client_secrets error:", data);
-      return res.status(response.status).json({
-        error: data.error?.message || "Failed to generate token",
-      });
+      console.error("OpenAI session error:", sdp);
+      return res.status(response.status).send(sdp);
     }
 
-    return res.status(200).json(data);
+    return res.status(200).send(sdp);
   } catch (error) {
-    console.error("Token generation error:", error);
-    return res.status(500).json({ error: "Failed to generate token" });
+    console.error("Session generation error:", error);
+    return res.status(500).json({ error: "Failed to generate session" });
   }
 }
