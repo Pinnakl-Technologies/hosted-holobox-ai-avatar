@@ -9,6 +9,10 @@
     {
       "source": "/token",
       "destination": "/api/token"
+    },
+    {
+      "source": "/session",
+      "destination": "/api/session"
     }
   ]
 }
